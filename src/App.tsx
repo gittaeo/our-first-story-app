@@ -1938,6 +1938,14 @@ function Showcase() {
   );
 }
 export default function App() {
+  const navigate = useNavigate();
+  useEffect(() => observeAuth((user) => {
+    if (!user) return;
+    const postAuthRoute = sessionStorage.getItem('our-first-story-post-auth');
+    if (!postAuthRoute) return;
+    sessionStorage.removeItem('our-first-story-post-auth');
+    navigate(postAuthRoute, { replace: true });
+  }), [navigate]);
   return (
     <Routes>
       <Route path="/" element={<Showcase />} />

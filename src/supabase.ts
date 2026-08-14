@@ -14,7 +14,8 @@ export function observeAuth(callback:(user:User|null)=>void){
 }
 export async function loginWithProvider(provider:'google'|'kakao'){
   if(!supabase)throw new Error('Supabase 연결이 필요합니다.');
-  const redirectTo=`${window.location.origin}${import.meta.env.BASE_URL}#/timeline`;
+  sessionStorage.setItem('our-first-story-post-auth', window.location.hash.slice(1) || '/timeline');
+  const redirectTo=`${window.location.origin}${import.meta.env.BASE_URL}`;
   const {error}=await supabase.auth.signInWithOAuth({provider,options:{redirectTo}});
   if(error)throw error;
 }
