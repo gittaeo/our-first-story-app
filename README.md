@@ -1,6 +1,17 @@
 # 우리의 첫 이야기
 
-임신부터 육아까지 엄마와 배우자가 함께 기록하는 모바일 중심 감성 성장 앨범입니다. 현재는 Firebase 설정이 없어도 전체 화면 흐름을 확인할 수 있는 데모 어댑터로 동작하며, `.env`의 `VITE_USE_MOCK=false`와 Firebase 값을 설정하면 실서비스 연결을 시작할 수 있습니다.
+임신부터 육아까지 부모가 함께 기록하고, 사진과 기록을 성장 이야기 앨범으로 만드는 모바일 중심 서비스입니다.
+
+- 웹/PWA: React 19, TypeScript, Vite
+- 앱 패키징: Capacitor(Android/iOS)
+- 백엔드: Firebase Authentication, Firestore, Storage, Functions, Hosting
+- 협업 편집 기반: Yjs
+
+## 현재 상태
+
+화면과 데모 데이터는 로컬에서 동작합니다. 실제 계정 로그인, 배우자 초대, 기기간 기록 공유를 사용하려면 Firebase 프로젝트를 연결하고 배포해야 합니다. 현재 기록 본문·사진의 완전한 서버 동기화는 출시 전 추가 구현 및 검증이 필요합니다.
+
+GitHub Pages는 미리보기 용도입니다. 실제 서비스는 Firebase Hosting을 권장합니다.
 
 ## 로컬 실행
 
@@ -10,37 +21,74 @@ Copy-Item .env.example .env
 pnpm dev
 ```
 
-`http://localhost:5173/welcome`에서 온보딩을, `/`에서 시드 타임라인을 확인합니다. 기록은 브라우저 `localStorage`에 저장됩니다.
-
-## 테스트와 빌드
+테스트와 프로덕션 빌드:
 
 ```powershell
 pnpm test
 pnpm build
 ```
 
-## Firebase 연결
+## Firebase 연결 순서
 
-1. Firebase 프로젝트에서 익명 인증, Firestore, Storage, Functions를 활성화합니다.
-2. `.env`에 `VITE_FIREBASE_*` 값을 입력하고 `VITE_USE_MOCK=false`로 바꿉니다.
-   Firebase Authentication의 로그인 제공업체에서 `이메일/비밀번호`를 활성화합니다.
-3. Functions 비밀값으로 `GEMINI_API_KEY`, 환경변수로 `GEMINI_MODEL`을 설정합니다.
-4. `firebase deploy --only firestore,storage,functions,hosting`으로 배포합니다.
+1. Firebase Console에서 프로젝트를 만들고 Authentication의 이메일/비밀번호 로그인을 활성화합니다.
+2. Firestore Database와 Storage를 생성합니다.
+3. 프로젝트 설정에서 웹 앱을 추가한 뒤 SDK 설정값을 `.env`에 입력합니다.
+4. `VITE_USE_MOCK=false`로 변경합니다.
+5. Functions에서 사용할 Gemini 키를 Secret 또는 환경값으로 등록합니다.
+6. 규칙, Functions, Hosting을 배포합니다.
 
-배포 후 소유자는 설정의 `배우자 초대`에서 로그인하고 초대 링크와 6자리 개인번호를 발급합니다. 시스템 공유창으로 배우자에게 전송하면 배우자는 `/join/{token}`에서 로그인한 뒤 개인번호와 표시 이름을 입력해 동일 workspace의 collaborator 멤버가 됩니다.
-
-클라이언트에는 Gemini 키나 Admin SDK가 포함되지 않습니다. 초대 token은 SHA-256으로, PIN은 임의 salt와 scrypt로 해시되고 5회 실패 시 5분 잠금됩니다. 일기 본문과 PIN을 분석 로그로 출력하지 않습니다.
-
-## Emulator
-
-```powershell
-pnpm --dir functions install
-pnpm --dir functions build
-pnpm emulators
+```env
+VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_AUTH_DOMAIN=...
+VITE_FIREBASE_PROJECT_ID=...
+VITE_FIREBASE_STORAGE_BUCKET=...
+VITE_FIREBASE_APP_ID=...
+VITE_USE_MOCK=false
 ```
 
-Emulator UI는 `http://localhost:4000`입니다. 두 브라우저에서 익명 사용자로 접속한 뒤, 첫 브라우저가 만든 링크와 별도로 표시된 PIN을 두 번째 브라우저에 입력하여 공동 작업자 멤버십을 검증합니다.
+```powershell
+pnpm firebase login
+pnpm firebase use --add
+pnpm firebase deploy --only firestore,storage,functions,hosting
+```
 
-## 실시간 공동편집 구현 기준
+## 휴대폰에 웹앱 설치
 
-기록 본문은 `Y.Text`, 메타데이터는 `Y.Map`, 사진·스티커는 `Y.Array`로 구성합니다. 클라이언트 업데이트는 250ms 단위로 압축해 Firestore `collab/updates`에 기록하고, 서버 함수가 누적 업데이트를 snapshot으로 합칩니다. 데모 모드는 혼자 쓰는 흐름에 한정되며 UI에 명확히 표시됩니다.
+배포된 사이트를 Chrome 또는 Safari로 열고 홈 화면에 추가하면 PWA로 설치할 수 있습니다. 서비스 워커, 앱 manifest, 설치 아이콘은 프로젝트에 포함되어 있습니다.
+
+## Android 앱
+
+Windows에서 Android Studio와 Android SDK를 설치한 뒤:
+
+```powershell
+pnpm cap:sync
+pnpm cap:android
+```
+
+Android Studio에서 서명된 Android App Bundle(`.aab`)을 만들고 Google Play Console에 올립니다. 신규 개인 개발자 계정은 프로덕션 출시 전 12명 이상의 테스터가 14일 연속 참여하는 비공개 테스트가 필요할 수 있습니다.
+
+## iOS 앱
+
+iOS 앱 프로젝트는 `ios/`에 생성되어 있지만 최종 빌드와 서명은 macOS와 Xcode가 필요합니다.
+
+```bash
+pnpm cap:sync
+pnpm cap:ios
+```
+
+Apple Developer Program 가입, App Store Connect 앱 생성, 개인정보 항목 작성, TestFlight 테스트 후 심사를 제출합니다.
+
+## 출시 전 필수 확인
+
+- 배우자 계정 사이의 Firestore 기록·사진 동기화 완성
+- 개인정보처리방침, 이용약관, 계정 삭제 기능
+- 사진 업로드 용량/형식 제한과 Storage 보안 규칙 검증
+- 실제 기기 테스트, 접근성, 오류 보고, 백업/복구
+- 앱 아이콘 및 스토어 스크린샷 제작
+- Google Play 데이터 보안 및 Apple 앱 개인정보 설문 작성
+
+## 프로젝트 자료
+
+- `google_ai_studio_final_prompt.md`: 최초 제작 프롬프트
+- `our_first_story_detailed_prd.docx`: 상세 기획서
+- `our_first_story_full_storyboard.pptx`: 전체 스토리보드
