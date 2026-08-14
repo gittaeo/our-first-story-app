@@ -1430,7 +1430,10 @@ function Invite() {
       const link = `${window.location.origin}${import.meta.env.BASE_URL}#/join/${encodeURIComponent(result.token)}`;
       setInvite({ link, pin: result.pin, expiresAt: result.expiresAt });
     } catch (reason) {
-      setMessage(reason instanceof Error ? reason.message : "초대를 만들지 못했습니다.");
+      const serverMessage = typeof reason === "object" && reason && "message" in reason
+        ? String(reason.message)
+        : "초대를 만들지 못했습니다.";
+      setMessage(serverMessage);
     } finally {
       setBusy(false);
     }
