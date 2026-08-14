@@ -157,11 +157,15 @@ function Shell({
           <Home />
           타임라인
         </NavLink>
-        <NavLink className="new" to="/new">
-          <Plus />새 기록
+        <NavLink to="/record/first-ultrasound">
+          <BookHeart />
+          앨범
+        </NavLink>
+        <NavLink className="new" to="/new" aria-label="새 기록">
+          <Plus />
         </NavLink>
         <NavLink to="/stories">
-          <BookHeart />
+          <Sparkles />
           이야기
         </NavLink>
         <NavLink to="/settings">
@@ -365,7 +369,7 @@ function Timeline() {
   const toggle = (x: string, a: string[], s: (v: string[]) => void) =>
     s(a.includes(x) ? a.filter((v) => v !== x) : [...a, x]);
   return (
-    <Shell title={`${profile?.babyName || "콩콩이"}의 시간`}>
+    <Shell title={`${profile?.babyName || "콩콩이"}와 함께`}>
       <section className="hero">
         <div>
           <span className="week">{progress.chip}</span>
@@ -379,6 +383,9 @@ function Timeline() {
         </div>
         <div className="sun">☀</div>
       </section>
+      <div className="timeline-heading">
+        <div><small>우리의 기록</small><h2>소중한 순간들</h2></div>
+      </div>
       <div className="toolbar">
         <div>
           <button className="chip active">전체 기록</button>
@@ -452,6 +459,7 @@ function Timeline() {
           </button>
         </div>
       )}
+      <NavLink className="floating-write" to="/new"><Plus /> 오늘 기록하기</NavLink>
       {open && (
         <div className="overlay" onClick={() => setOpen(false)}>
           <section className="sheet" onClick={(e) => e.stopPropagation()}>
@@ -591,6 +599,7 @@ function Write() {
     originY: number;
   } | null>(null);
   const [mediaOpen, setMediaOpen] = useState<"photo" | "sticker" | null>(null);
+  const [aiOpen, setAiOpen] = useState(false);
   const stickerOptions = [
     "♡",
     "✦",
@@ -826,7 +835,7 @@ function Write() {
           >
             ✿<span>스티커 {stickers.length}</span>
           </button>
-          <button>
+          <button onClick={() => setAiOpen(true)}>
             ✦<span>AI 제안</span>
           </button>
         </div>
@@ -998,6 +1007,19 @@ function Write() {
             {existing ? "수정 내용 저장하기" : "오늘의 순간 저장하기"}
           </button>
       </section>
+      {aiOpen && (
+        <div className="overlay ai-overlay" onClick={() => setAiOpen(false)}>
+          <section className="sheet ai-suggestion-sheet" onClick={(event) => event.stopPropagation()}>
+            <div className="sheet-grip" />
+            <header><div><small>마음결 AI의 제안</small><h2>마음에 드는 것만 담아보세요</h2></div><button onClick={() => setAiOpen(false)}><X /></button></header>
+            <label className="suggestion checked"><span>✓</span><div><b>일기 제목</b><p>{body.split(/[.!?\n]/)[0].slice(0, 26) || "톡톡, 우리만의 첫 인사"}</p></div><small>직접 수정 가능</small></label>
+            <label className="suggestion checked"><span>✓</span><div><b>짧은 요약</b><p>{body ? `${body.slice(0, 58)}${body.length > 58 ? "…" : ""}` : "조용한 오후, 별이가 건넨 작은 움직임을 함께 기억했어요."}</p></div><small>직접 수정 가능</small></label>
+            <label className="suggestion checked"><span>✓</span><div><b>감정에 어울리는 문장</b><p className="quote">작은 두드림 하나가 우리를 이미 세 식구로 만들어주었다.</p></div><small>직접 수정 가능</small></label>
+            <label className="suggestion"><span /><div><b>추천 스티커</b><p>작은 별　반짝임　포근한 구름</p></div></label>
+            <button className="primary" onClick={() => setAiOpen(false)}>선택한 3개 적용하기</button>
+          </section>
+        </div>
+      )}
     </Shell>
   );
 }
@@ -1431,7 +1453,13 @@ function Invite() {
         <p>링크와 PIN은 따로 전달하면 더 안전해요.</p>
       </div>
       {!firebaseEnabled ? (
-        <div className="firebase-notice"><b>Firebase 연결이 필요해요</b><p><code>.env</code>에 Firebase 값을 넣고 <code>VITE_USE_MOCK=false</code>로 설정하면 실제 로그인과 초대 발급이 활성화됩니다.</p></div>
+        <div className="invite-card invite-preview">
+          <label>초대 링크<div><code>ourstory.app/i/star-2214</code><button onClick={() => copy("https://ourstory.app/i/star-2214", "초대 링크")}>복사</button></div></label>
+          <label>6자리 비밀번호<div className="pin-boxes">{"428193".split("").map((digit, index) => <strong key={`${digit}-${index}`}>{digit}</strong>)}</div></label>
+          <div className="shared-scope"><b>✓　공유되는 범위</b><small>전체 타임라인 · 모든 기록 · 사진 · 스티커 · 성장 이야기</small></div>
+          <button className="primary" onClick={() => setMessage("로그인 연결 후 실제 초대를 보낼 수 있어요.")}>초대 수락하고 함께하기</button>
+          {message && <small>{message}</small>}
+        </div>
       ) : !ready ? (
         <div className="invite-loading">로그인 상태를 확인하고 있어요…</div>
       ) : !user ? (
