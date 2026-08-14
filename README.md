@@ -47,9 +47,9 @@ VITE_USE_MOCK=false
 ```
 
 ```powershell
-pnpm firebase login
-pnpm firebase use --add
-pnpm firebase deploy --only firestore,storage,functions,hosting
+pnpm exec firebase login
+pnpm exec firebase use --add
+pnpm exec firebase deploy --only firestore,storage,functions,hosting
 ```
 
 ## 휴대폰에 웹앱 설치
