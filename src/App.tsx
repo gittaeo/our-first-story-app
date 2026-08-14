@@ -208,6 +208,7 @@ function Setup() {
       babyName: "",
       stage: "pregnant",
       date: "",
+      pregnancyDate: "",
       momName: "엄마",
       partnerName: "배우자",
     },
@@ -263,21 +264,29 @@ function Setup() {
             <br />
             맞춰볼게요
           </h1>
+          {p.stage === "pregnant" && <label>
+            임신 시작일
+            <input
+              type="date"
+              value={p.pregnancyDate || ""}
+              max={p.date || undefined}
+              onChange={(e) => setP({ ...p, pregnancyDate: e.target.value })}
+            />
+          </label>}
           <label>
             {p.stage === "pregnant" ? "출산 예정일" : "아기 생년월일"}
             <input
               type="date"
               value={p.date}
+              min={p.stage === "pregnant" ? p.pregnancyDate || undefined : undefined}
               onChange={(e) => setP({ ...p, date: e.target.value })}
             />
           </label>
           {p.date && (
             <div className="calculated">
-              ✦ 현재{" "}
-              {p.stage === "pregnant"
-                ? calculateWeek(p.date)
-                : calculateAge(p.date)}
-              로 계산돼요
+              ✦ {p.stage === "pregnant" && p.pregnancyDate
+                ? `우리에게 온 지 ${calculateProgress(p.stage, p.date, new Date(), p.pregnancyDate).days}일 · 만나기까지 ${calculateProgress(p.stage, p.date, new Date(), p.pregnancyDate).remainingDays}일`
+                : `현재 ${calculateAge(p.date)}로 계산돼요`}
             </div>
           )}
         </>
@@ -318,7 +327,7 @@ function Setup() {
       )}
       <button
         className="primary"
-        disabled={!p.babyName || !p.date}
+        disabled={!p.babyName || !p.date || (p.stage === "pregnant" && (!p.pregnancyDate || p.pregnancyDate > p.date))}
         onClick={next}
       >
         {step === 2 ? "가족 앨범 만들기" : "다음"} <ChevronRight />
@@ -364,8 +373,8 @@ function Timeline() {
     [records, types, ems],
   );
   const progress = profile?.date
-    ? calculateProgress(profile.stage, profile.date)
-    : { chip: "날짜 미설정", days: 0, caption: "날짜를 설정해주세요", week: 0 };
+    ? calculateProgress(profile.stage, profile.date, new Date(), profile.pregnancyDate)
+    : { chip: "날짜 미설정", days: 0, remainingDays: 0, caption: "날짜를 설정해주세요", week: 0 };
   const toggle = (x: string, a: string[], s: (v: string[]) => void) =>
     s(a.includes(x) ? a.filter((v) => v !== x) : [...a, x]);
   return (
@@ -374,17 +383,17 @@ function Timeline() {
         <div>
           <span className="week">{progress.chip}</span>
           <h2>
-            {profile?.stage === "pregnant" ? `${profile.babyName}와 ${progress.caption}` : progress.caption}
+            {profile?.stage === "pregnant" ? progress.caption : progress.caption}
             <br />
             <em>
               {profile?.stage === "pregnant"
-                ? profile?.date ? `${progress.days}일 남았어요` : "예정일을 설정해주세요"
+                ? profile?.pregnancyDate ? `${progress.days}일째` : "임신 시작일을 설정해주세요"
                 : progress.days ? `${progress.days}일째` : "오늘 태어났어요"}
             </em>
           </h2>
         </div>
         {profile?.stage === "pregnant" ? (
-          <div className="week-orb"><b>{progress.week}</b><small>week</small></div>
+          <div className="week-orb"><b>D-{progress.remainingDays}</b><small>{profile.babyName} 만나기까지</small></div>
         ) : <div className="sun">☀</div>}
       </section>
       <div className="timeline-heading">
@@ -1596,6 +1605,7 @@ function BabySettings() {
       babyName: "",
       stage: "pregnant",
       date: "",
+      pregnancyDate: "",
       momName: "엄마",
       partnerName: "배우자",
     },
@@ -1640,15 +1650,27 @@ function BabySettings() {
             🍼 출산 후
           </button>
         </div>
+        {p.stage === "pregnant" && <label>
+            임신 시작일
+            <input
+              type="date"
+              value={p.pregnancyDate || ""}
+              max={p.date || undefined}
+              onChange={(e) => setP({ ...p, pregnancyDate: e.target.value })}
+            />
+        </label>}
         <label>
           {p.stage === "pregnant" ? "출산 예정일" : "생년월일"}
           <input
             type="date"
             value={p.date}
+            min={p.stage === "pregnant" ? p.pregnancyDate || undefined : undefined}
             onChange={(e) => setP({ ...p, date: e.target.value })}
           />
         </label>
-        {preview && <div className="calculated">현재 {preview}로 계산돼요</div>}
+        {preview && <div className="calculated">{p.stage === "pregnant" && p.pregnancyDate
+          ? `우리에게 온 지 ${calculateProgress(p.stage, p.date, new Date(), p.pregnancyDate).days}일 · 만나기까지 ${calculateProgress(p.stage, p.date, new Date(), p.pregnancyDate).remainingDays}일`
+          : `현재 ${preview}로 계산돼요`}</div>}
         <div className="settings-names">
           <label>
             엄마 표시 이름
@@ -1667,7 +1689,7 @@ function BabySettings() {
         </div>
         <button
           className="primary"
-          disabled={!p.babyName.trim() || !p.date}
+          disabled={!p.babyName.trim() || !p.date || (p.stage === "pregnant" && (!p.pregnancyDate || p.pregnancyDate > p.date))}
           onClick={() => {
             setProfile(p);
             nav("/settings");
@@ -1771,6 +1793,7 @@ function PhoneSetup() {
       babyName: "별이",
       stage: "pregnant",
       date: "2026-12-14",
+      pregnancyDate: "2026-03-09",
       momName: "서윤",
       partnerName: "민준",
     },
@@ -1820,11 +1843,21 @@ function PhoneSetup() {
             생년월일
           </button>
         </div>
+        {p.stage === "pregnant" && <label>
+          임신 시작일
+          <input
+            type="date"
+            value={p.pregnancyDate || ""}
+            max={p.date || undefined}
+            onChange={(e) => setP({ ...p, pregnancyDate: e.target.value })}
+          />
+        </label>}
         <label>
           {p.stage === "pregnant" ? "출산 예정일" : "생년월일"}
           <input
             type="date"
             value={p.date}
+            min={p.stage === "pregnant" ? p.pregnancyDate || undefined : undefined}
             onChange={(e) => setP({ ...p, date: e.target.value })}
           />
         </label>
@@ -1847,7 +1880,7 @@ function PhoneSetup() {
       </section>
       <button
         className="phone-cta"
-        disabled={!p.babyName.trim() || !p.date}
+        disabled={!p.babyName.trim() || !p.date || (p.stage === "pregnant" && (!p.pregnancyDate || p.pregnancyDate > p.date))}
         onClick={start}
       >
         {p.babyName.trim() || "아기"}의 앨범 {profile ? "계속하기" : "시작하기"}{" "}
