@@ -1,5 +1,6 @@
 node_modules/
 dist/
+.vite/
 functions/lib/
 .codex-work/
 our_first_story_full_storyboard/
