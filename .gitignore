@@ -1,0 +1,13 @@
+node_modules/
+dist/
+functions/lib/
+.codex-work/
+our_first_story_full_storyboard/
+.env
+.env.*
+!.env.example
+firebase-debug.log
+firebase-debug.*.log
+*.local
+.DS_Store
+Thumbs.db
