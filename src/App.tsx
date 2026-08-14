@@ -365,7 +365,7 @@ function Timeline() {
   );
   const progress = profile?.date
     ? calculateProgress(profile.stage, profile.date)
-    : { chip: "날짜 미설정", days: 0, caption: "우리에게 온 지" };
+    : { chip: "날짜 미설정", days: 0, caption: "날짜를 설정해주세요", week: 0 };
   const toggle = (x: string, a: string[], s: (v: string[]) => void) =>
     s(a.includes(x) ? a.filter((v) => v !== x) : [...a, x]);
   return (
@@ -374,14 +374,18 @@ function Timeline() {
         <div>
           <span className="week">{progress.chip}</span>
           <h2>
-            {progress.caption}
+            {profile?.stage === "pregnant" ? `${profile.babyName}와 ${progress.caption}` : progress.caption}
             <br />
             <em>
-              {progress.days ? `${progress.days}일째` : "날짜를 설정해주세요"}
+              {profile?.stage === "pregnant"
+                ? profile?.date ? `${progress.days}일 남았어요` : "예정일을 설정해주세요"
+                : progress.days ? `${progress.days}일째` : "오늘 태어났어요"}
             </em>
           </h2>
         </div>
-        <div className="sun">☀</div>
+        {profile?.stage === "pregnant" ? (
+          <div className="week-orb"><b>{progress.week}</b><small>week</small></div>
+        ) : <div className="sun">☀</div>}
       </section>
       <div className="timeline-heading">
         <div><small>우리의 기록</small><h2>소중한 순간들</h2></div>

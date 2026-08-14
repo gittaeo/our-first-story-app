@@ -2,7 +2,19 @@ import type {Emotion,StoryPhoto,StoryRecord} from './types';
 export const emotions:Emotion[]=['행복','설렘','감동','걱정','피곤'];
 export function calculateWeek(due:string,now=new Date()){const dueDate=new Date(due+'T00:00:00');const conception=new Date(dueDate);conception.setDate(conception.getDate()-280);const days=Math.max(0,Math.floor((now.getTime()-conception.getTime())/86400000));return `${Math.min(40,Math.floor(days/7))}주 ${days%7}일`;}
 export function calculateAge(birth:string,now=new Date()){const b=new Date(birth+'T00:00:00');let m=(now.getFullYear()-b.getFullYear())*12+now.getMonth()-b.getMonth();if(now.getDate()<b.getDate())m--;return `${Math.max(0,m)}개월`;}
-export function calculateProgress(stage:'pregnant'|'born',date:string,now=new Date()){const target=new Date(date+'T00:00:00');if(Number.isNaN(target.getTime()))return{chip:'날짜 미설정',days:0,caption:'우리에게 온 지'};if(stage==='born'){const days=Math.max(0,Math.floor((now.getTime()-target.getTime())/86400000)+1);return{chip:calculateAge(date,now),days,caption:'태어난 지'}}const conception=new Date(target);conception.setDate(conception.getDate()-280);const days=Math.max(1,Math.min(280,Math.floor((now.getTime()-conception.getTime())/86400000)+1));return{chip:calculateWeek(date,now),days,caption:'우리에게 온 지'}}
+export function calculateProgress(stage:'pregnant'|'born',date:string,now=new Date()){
+  const target=new Date(date+'T00:00:00');
+  if(Number.isNaN(target.getTime()))return{chip:'날짜 미설정',days:0,caption:'날짜를 설정해주세요',week:0};
+  if(stage==='born'){
+    const days=Math.max(0,Math.floor((now.getTime()-target.getTime())/86400000)+1);
+    return{chip:calculateAge(date,now),days,caption:'태어난 지',week:0};
+  }
+  const today=Date.UTC(now.getFullYear(),now.getMonth(),now.getDate());
+  const due=Date.UTC(target.getFullYear(),target.getMonth(),target.getDate());
+  const remaining=Math.max(0,Math.ceil((due-today)/86400000));
+  const elapsed=Math.max(0,Math.min(280,280-remaining));
+  return{chip:calculateWeek(date,now),days:remaining,caption:'만날 날까지',week:Math.min(40,Math.floor(elapsed/7))};
+}
 export function validateRecord(body:string,emotion?:Emotion){return{body:body.trim()?'':'오늘의 이야기를 적어주세요',emotion:emotion?'':'오늘의 감정을 선택해주세요'};}
 export function filterRecords(records:StoryRecord[],types:string[],ems:string[]){return records.filter(r=>(!types.length||types.includes(r.type))&&(!ems.length||ems.includes(r.emotion)));}
 export function canAddPhoto(count:number){return count<5;}
