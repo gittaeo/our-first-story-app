@@ -4,14 +4,14 @@
 
 - 웹/PWA: React 19, TypeScript, Vite
 - 앱 패키징: Capacitor(Android/iOS)
-- 백엔드: Firebase Authentication, Firestore, Storage, Functions, Hosting
+- 백엔드: Supabase Auth, Postgres, Storage
 - 협업 편집 기반: Yjs
 
 ## 현재 상태
 
-화면과 데모 데이터는 로컬에서 동작합니다. 실제 계정 로그인, 배우자 초대, 기기간 기록 공유를 사용하려면 Firebase 프로젝트를 연결하고 배포해야 합니다. 현재 기록 본문·사진의 완전한 서버 동기화는 출시 전 추가 구현 및 검증이 필요합니다.
+화면과 데모 데이터는 로컬에서 동작합니다. 실제 계정 로그인과 배우자 초대는 Supabase 프로젝트를 연결하면 활성화됩니다. 현재 기록 본문·사진의 완전한 서버 동기화는 출시 전 추가 구현 및 검증이 필요합니다.
 
-GitHub Pages는 미리보기 용도입니다. 실제 서비스는 Firebase Hosting을 권장합니다.
+GitHub Pages는 웹 배포에 사용하며 인증·데이터는 Supabase에 저장합니다.
 
 ## 로컬 실행
 
@@ -28,28 +28,22 @@ pnpm test
 pnpm build
 ```
 
-## Firebase 연결 순서
+## Supabase 연결 순서
 
-1. Firebase Console에서 프로젝트를 만들고 Authentication의 이메일/비밀번호 로그인을 활성화합니다.
-2. Firestore Database와 Storage를 생성합니다.
-3. 프로젝트 설정에서 웹 앱을 추가한 뒤 SDK 설정값을 `.env`에 입력합니다.
-4. `VITE_USE_MOCK=false`로 변경합니다.
-5. Functions에서 사용할 Gemini 키를 Secret 또는 환경값으로 등록합니다.
-6. 규칙, Functions, Hosting을 배포합니다.
+1. Supabase에서 프로젝트를 생성합니다.
+2. SQL Editor에서 `supabase/migrations/202608140001_family_invites.sql`을 실행합니다.
+3. Authentication Providers에서 Google과 Kakao를 활성화합니다.
+4. Redirect URL에 `https://gittaeo.github.io/our-first-story-app/`을 등록합니다.
+5. Project URL과 Publishable key를 `.env`와 GitHub Actions Secrets에 등록합니다.
 
 ```env
-VITE_FIREBASE_API_KEY=...
-VITE_FIREBASE_AUTH_DOMAIN=...
-VITE_FIREBASE_PROJECT_ID=...
-VITE_FIREBASE_STORAGE_BUCKET=...
-VITE_FIREBASE_APP_ID=...
-VITE_USE_MOCK=false
+VITE_SUPABASE_URL=https://PROJECT.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 ```
 
 ```powershell
-pnpm exec firebase login
-pnpm exec firebase use --add
-pnpm exec firebase deploy --only firestore,storage,functions,hosting
+gh secret set VITE_SUPABASE_URL
+gh secret set VITE_SUPABASE_PUBLISHABLE_KEY
 ```
 
 ## 휴대폰에 웹앱 설치

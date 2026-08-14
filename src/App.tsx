@@ -35,15 +35,14 @@ import {
 } from "./domain";
 import { useStore } from "./store";
 import {
+  backendEnabled,
   createInviteRemote,
   createWorkspaceRemote,
-  firebaseEnabled,
   joinWorkspaceRemote,
-  loginWithEmail,
+  loginWithProvider,
   observeAuth,
-  registerWithEmail,
-} from "./firebase";
-import type { User } from "firebase/auth";
+  type AuthUser,
+} from "./supabase";
 import type {
   Emotion,
   Profile,
@@ -64,8 +63,8 @@ const icons: Record<RecordType, string> = {
   letter: "💌",
 };
 function useAuthUser() {
-  const [user, setUser] = useState<User | null>(null);
-  const [ready, setReady] = useState(!firebaseEnabled);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [ready, setReady] = useState(!backendEnabled);
   useEffect(
     () =>
       observeAuth((nextUser) => {
@@ -78,21 +77,13 @@ function useAuthUser() {
 }
 
 function AuthPanel({ onDone }: { onDone?: () => void }) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [mode, setMode] = useState<"login" | "register">("login");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const submit = async () => {
+  const submit = async (provider: "google" | "kakao") => {
     setError("");
-    if (!email || password.length < 6) {
-      setError("이메일과 6자리 이상의 비밀번호를 입력해주세요.");
-      return;
-    }
     setBusy(true);
     try {
-      if (mode === "login") await loginWithEmail(email, password);
-      else await registerWithEmail(email, password);
+      await loginWithProvider(provider);
       onDone?.();
     } catch (reason) {
       const message = reason instanceof Error ? reason.message : "로그인하지 못했습니다.";
@@ -103,14 +94,10 @@ function AuthPanel({ onDone }: { onDone?: () => void }) {
   };
   return (
     <div className="auth-panel">
-      <div className="auth-tabs">
-        <button className={mode === "login" ? "active" : ""} onClick={() => setMode("login")}>로그인</button>
-        <button className={mode === "register" ? "active" : ""} onClick={() => setMode("register")}>새 계정 만들기</button>
-      </div>
-      <label>이메일<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" /></label>
-      <label>비밀번호<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={mode === "login" ? "current-password" : "new-password"} /></label>
+      <h3>간편 로그인</h3><p>로그인하면 안전한 개인 계정과 가족 앨범이 연결돼요.</p>
       {error && <small className="auth-error">{error}</small>}
-      <button className="primary" disabled={busy} onClick={submit}>{busy ? "확인 중…" : mode === "login" ? "로그인하기" : "계정 만들기"}</button>
+      <button className="social-login google" disabled={busy} onClick={() => submit("google")}>G　Google로 계속하기</button>
+      <button className="social-login kakao" disabled={busy} onClick={() => submit("kakao")}>●　카카오로 계속하기</button>
     </div>
   );
 }
@@ -1440,7 +1427,7 @@ function Invite() {
         localStorage.setItem("ofs-workspace-id", workspaceId);
       }
       const result = await createInviteRemote(workspaceId);
-      const link = `${window.location.origin}/join/${encodeURIComponent(result.token)}`;
+      const link = `${window.location.origin}${import.meta.env.BASE_URL}#/join/${encodeURIComponent(result.token)}`;
       setInvite({ link, pin: result.pin, expiresAt: result.expiresAt });
     } catch (reason) {
       setMessage(reason instanceof Error ? reason.message : "초대를 만들지 못했습니다.");
@@ -1465,14 +1452,8 @@ function Invite() {
         <h2>배우자를 초대해요</h2>
         <p>링크와 PIN은 따로 전달하면 더 안전해요.</p>
       </div>
-      {!firebaseEnabled ? (
-        <div className="invite-card invite-preview">
-          <label>초대 링크<div><code>ourstory.app/i/star-2214</code><button onClick={() => copy("https://ourstory.app/i/star-2214", "초대 링크")}>복사</button></div></label>
-          <label>6자리 비밀번호<div className="pin-boxes">{"428193".split("").map((digit, index) => <strong key={`${digit}-${index}`}>{digit}</strong>)}</div></label>
-          <div className="shared-scope"><b>✓　공유되는 범위</b><small>전체 타임라인 · 모든 기록 · 사진 · 스티커 · 성장 이야기</small></div>
-          <button className="primary" onClick={() => setMessage("로그인 연결 후 실제 초대를 보낼 수 있어요.")}>초대 수락하고 함께하기</button>
-          {message && <small>{message}</small>}
-        </div>
+      {!backendEnabled ? (
+        <div className="firebase-notice"><b>실제 계정 서버를 연결하고 있어요</b><p>Supabase 프로젝트 URL과 공개 키를 배포 환경에 연결하면 Google·Kakao 로그인과 실제 초대 발급이 활성화됩니다. 가짜 링크는 더 이상 발급하지 않습니다.</p></div>
       ) : !ready ? (
         <div className="invite-loading">로그인 상태를 확인하고 있어요…</div>
       ) : !user ? (
@@ -1531,7 +1512,7 @@ function JoinInvite() {
       <p className="eyebrow">PRIVATE FAMILY INVITE</p>
       <h1>함께 기록할게요</h1>
       <p>로그인한 계정과 가족 앨범을 안전하게 연결합니다.</p>
-      {!firebaseEnabled ? <div className="firebase-notice">Firebase 연결이 필요합니다.</div> : !ready ? <div>로그인 확인 중…</div> : !user ? <AuthPanel /> : (
+      {!backendEnabled ? <div className="firebase-notice">아직 계정 서버가 연결되지 않아 이 초대를 확인할 수 없습니다.</div> : !ready ? <div>로그인 확인 중…</div> : !user ? <AuthPanel /> : (
         <div className="join-card">
           <small>{user.email} 계정으로 참여</small>
           <label>6자리 개인번호<input inputMode="numeric" maxLength={6} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))} placeholder="000000" /></label>
